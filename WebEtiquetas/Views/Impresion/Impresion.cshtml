@@ -1,0 +1,823 @@
+﻿
+@{
+    ViewBag.Title = "Impresion";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/Content/jquery.dataTables.css" rel="stylesheet" />
+<style type="text/css">
+    .table-cell-edit {
+        color: red;
+        font-weight: bold;
+    }
+</style>
+
+<h5>Generador de Etiquetas y Código de Barras</h5>
+<hr />
+<p class="text-danger" id="mensajeTransaccion"> </p>
+<!-------  Combos  ------->
+<div class="row">
+    <div class="col-md-2">
+        <p class="fw-bolder">Sub Categoria:</p>
+    </div>
+    <div class="col-md-4">
+        @*@Html.DropDownList("SubCategoria", null, "---Seleccione una Opción---", htmlAttributes: new { @class = "form-select", @id = "ddlSubCategoria", @onchange = "onchangeseleccionaSubCategoria(this.value)" })*@
+        <select class="form-select-sm" id="ddlsubCategoria" onchange="onchangeseleccionaSubCategoria(this.value)">
+            <option value="0">---- Seleccione ----</option>
+        </select>
+    </div>
+</div>
+<br />
+<hr />
+
+<!-------  Modal Grid Productos  ------->
+<div class="row">
+    <table id="tblProductos" class="display" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th></th>
+                <th>No.</th>
+                <th>Producto</th>
+                <th>Precio</th>
+                <th>SubCategoria</th>
+                <th>Activo</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+<br />
+<br />
+<hr />
+<!-------  Modal Grid Impresiones  ------->
+<div class="row">
+    <p id="mensajeUsuario" class="text-danger"></p>
+</div>
+<div class="row">
+    <table id="tblImpresiones" class="display" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th>Núm Imp.</th>
+                <th>Code Bar</th>
+                <th>Núm Prod.</th>
+                <th>Producto</th>
+                <th>Fecha</th>
+                <th>Cantidad</th>
+                <th>Núm Code Bar</th>
+                <th>Impreso</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+<div class="row">
+    <div class="col-md-12 text-end">
+        <input type="button" class="btn btn-success visually-hidden" id="btnImprimir" value="Imprimir" onclick="onclickimprimeEtiquetas()"  />
+    </div>
+</div>
+
+
+<!-- Modal Popup Selecciona -->
+<div id="modalseleccionaProductos" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"></h4>
+                <button type="button" class="close" data-bs-dismiss="modal">
+                    &times;
+                </button>
+            </div>
+            <div class="modal-body">
+                <label id="lblCodigoBarras" class="fw-bold">Código de Barras: </label>
+                <select class="form-select-sm" id="ddlcodigoBarras" onchange="onchangeddlcodigoBarras($(this).val())">
+                    <option value="0">---- Seleccione ----</option>
+                </select>
+                <br />
+                <br />
+                <label id="lblnumProducto" class="fw-bold"></label>
+                <br />
+                <label id="lblProducto" class="fw-bold"></label>
+                <br />
+                <br />
+                <label for="lblCantidad" class="fw-bold">Cantidad: </label>
+                <input class="form-control-sm" type="text" id="txtCantidad" name="Cantidad" maxlength="4">
+                <br />
+                <br />
+                <label id="lblrequierecantidad" class="text-bg-danger"></label>
+                <input type="hidden" name="hdidproducto" id="hdidproducto" value="" />
+                <input type="hidden" id="hdidcodigoBarras" value="" />
+            </div>
+
+            <div class="modal-footer">
+                <input type="button" class="btn btn-primary" value="Agregar" onclick="onclickGuardarCantidad()" />
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="onclickCerrarModal()">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Popup Selecciona Impresion actualiza -->
+<div id="modalseleccionaImpresion" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"></h4>
+                <button type="button" class="close" data-bs-dismiss="modal">
+                    &times;
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <label id="lblnumProductoActualiza" class="fw-bold"></label>
+                <br />
+                <label id="lblProductoActualiza" class="fw-bold"></label>
+                <br />
+                <br />
+                <label for="lblCantidad" class="fw-bold">Cantidad: </label>
+                <input class="form-control-sm" type="text" id="txtCantidadActualiza" name="Cantidad" maxlength="4">
+                <br />
+                <br />
+                <label id="lblrequierecantidadActualiza" class="text-bg-danger"></label>
+                <input type="hidden" id="hdidimpresion"  />
+            </div>
+
+            <div class="modal-footer">
+                <input type="button" class="btn btn-primary" value="Guardar" onclick="onclickActualizarCantidad()" />
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="onclickCerrarModal()">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        fncargaddlsubCategoria();
+        var _idsubcategoria = 0;
+        fnGridCargaProductos(0);
+        fnGridCargaImpresiones();
+
+    });
+
+    function fncargaddlsubCategoria() {
+
+         $.ajax({
+                 url: "@Url.Action("consultasubCategoria", "Impresion")",
+                 type: "POST",
+                 contentType: "application/json; charset=utf-8",
+                 success: function (data) {
+
+                     var codigoRespuesta = data.jsonRespuesta.codigoRespuesta;
+                     var mensaje = data.jsonRespuesta.mensaje;
+
+                     if (codigoRespuesta == "0000") {
+
+                         $("#ddlsubCategoria").val('');
+                         $("#ddlsubCategoria").empty();
+                         $('#ddlsubCategoria').append('<option value="0">---- Seleccione ----</option>');
+
+                         $.each(data.jsonsubCategoria, function (index, type) {
+                             var content = '<option value="' + type.ID_SUB_CATEGORIA + '">' + type.NOM_SUBCATEGORIA + '</option>';
+                             $("#ddlsubCategoria").append(content);
+                         });
+                     }
+
+                     if (codigoRespuesta == "0001") {
+
+                         $("#mensajeTransaccion").text(mensaje + '  '  +' Favor de agregar datos para el Catálogo Sub-Categoria');
+                     }
+
+                     if (codigoRespuesta == "1000") {
+
+                         $("#mensajeTransaccion").text(mensaje);
+                     }
+
+
+                         },
+                        error: function (xhr, ajaxOptions, thrownError) {
+
+                        },
+                        complete: function (xhr, status) {
+
+                        }
+         });
+
+    }
+
+    function onclickimprimeEtiquetas() {
+
+              $.ajax({
+                     url: "@Url.Action("imprimeEtiquetas", "Impresion")",
+                     type: "POST",
+                     contentType: "application/json; charset=utf-8",
+                          success: function (data) {
+
+
+                              $("#mensajeUsuario").text('');
+                              $("#mensajeTransaccion").text('');
+
+                              var codigoRespuesta = data.jsonRespuesta.codigoRespuesta;
+                              var mensaje = data.jsonRespuesta.mensaje;
+                              var mensajeError = data.jsonRespuesta.mensaje + '| nombre clase: ' + data.jsonRespuesta.nombreClase + '| nombre método: ' + data.jsonRespuesta.nombreMetodo;
+
+                              if (codigoRespuesta == "0000") {
+
+                                  $("#mensajeUsuario").text(mensaje);
+                                  fnrefreshgridImpresiones();
+                              }
+
+                              if (codigoRespuesta == "0001") {
+                                  $("#mensajeUsuario").text(mensaje);
+                              }
+
+                              if (codigoRespuesta == "1000") {
+
+                                  $("#mensajeTransaccion").text(mensajeError);
+                                  $("#mensajeUsuario").text('no se pudo efectuar la impresión revise la parte superior de la pantalla y reporte al administrador del sistema');
+                              }
+                              if (codigoRespuesta == "0002") {
+                                 $("#mensajeUsuario").text(mensaje);
+                              }
+
+
+
+                                  },
+                                  error: function (xhr, ajaxOptions, thrownError) {
+
+                                  },
+                                  complete: function (xhr, status) {
+
+                                  }
+                     });
+    }
+
+    function fnpreparaEtiqueta(idimpresion) {
+
+        var dataObject = { idImpresion: idimpresion };
+
+        $.ajax({
+            url: "@Url.Action("preparaEtiqueta", "Impresion")",
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(dataObject),
+            success: function (data) {
+
+                $("#mensajeUsuario").text('');
+                $("#mensajeTransaccion").text('');
+
+                var codigoRespuesta = data.jsonRespuesta.codigoRespuesta;
+                var existenImpresos = data.existeImpreso;
+                var mensaje = data.jsonRespuesta.mensaje;
+                var mensajeError = data.jsonRespuesta.mensaje + '| nombre clase: ' + data.jsonRespuesta.nombreClase + '| nombre método: ' + data.jsonRespuesta.nombreMetodo;
+
+                if (codigoRespuesta == "0000") {
+                    fnrefreshgridImpresiones();
+                    $("#mensajeUsuario").text("se preparo la impresión " + idimpresion)
+                    if (existenImpresos == "1") {
+                        $("#btnImprimir").removeClass('visually-hidden');
+                    }
+                    if (existenImpresos == "0") {
+                        $("#btnImprimir").addClass('visually-hidden');
+                    }
+                }
+
+                if (codigoRespuesta == "0001") {
+
+                    $("#mensajeTransaccion").text(mensaje);
+                }
+                if (codigoRespuesta == "1000") {
+
+                    $("#mensajeTransaccion").text(mensajeError);
+                }
+
+                if (codigoRespuesta == "0002") {
+
+                    $("#mensajeTransaccion").text(mensaje);
+                }
+
+                                  },
+                                  error: function (xhr, ajaxOptions, thrownError) {
+
+                                  },
+                                  complete: function (xhr, status) {
+
+                                  }
+                     });
+}
+
+    function onchangeseleccionaSubCategoria(val) {
+
+        fnGridCargaProductos(val);
+    }
+
+    function onclickCerrarModal() {
+
+        new bootstrap.Modal($("#modalseleccionaProductos")).hide();
+        fnlimpiaModal();
+        $("#txtCantidad").val('');
+    }
+
+    function onclickCerrarModalImpresiones() {
+
+        new bootstrap.Modal($("#modalseleccionaImpresion")).hide();
+        fnlimpiaModalImpresiones();
+        $("#txtCantidadActualiza").val('');
+    }
+
+    function onchangeddlcodigoBarras(item) {
+
+        var idcodigoBarras = item;
+       $('#hdidcodigoBarras').val(idcodigoBarras)
+
+    }
+
+    function onclickGuardarCantidad() {
+
+        var _idProducto = $("#hdidproducto").val();
+        var _cantidad = $("#txtCantidad").val();
+        var _idCodigoBarras = $("#hdidcodigoBarras").val();
+
+        if (_cantidad == ' ' || _idCodigoBarras == 0) {
+
+            $("#lblrequierecantidad").text("* requiere ingrese la cantidad y/o seleccione el código de barras a imprimir");
+            return;
+        }
+
+        var dataObject = { idProducto: _idProducto, cantidad: _cantidad, idCodigoBarras: _idCodigoBarras };
+
+            $.ajax({
+                 url: "@Url.Action("InsertaImpresion", "Impresion")",
+                type: "POST",
+                 dataType : 'json',
+                 contentType: "application/json; charset=utf-8",
+                 data: JSON.stringify(dataObject),
+              success: function (data) {
+
+                  fncierramodalseleccionaProductos();
+                  fnlimpiaModal();
+
+                  var strmensaje = "";
+
+                  if (data.respimpresionAgrega.codigoRespuesta == "0000") {
+
+                      strmensaje = 'El registro seleccionado se agrego correctamente para su impresión'
+                      $('#mensajeUsuario').text(strmensaje);
+                      fnrefreshgridImpresiones();
+                      $("#btnImprimir").removeClass('visually-hidden');
+                  }
+
+                  if (data.respimpresionAgrega.codigoRespuesta == "1000") {
+
+                      strmensaje = data.respimpresionAgrega.codigoRespuesta + "|" + data.respimpresionAgrega.mensaje + "|" + data.respimpresionAgrega.nombreClase + "|" + data.respimpresionAgrega.nombreMetodo;
+                      $("#mensajeTransaccion").text(strmensaje);
+                  }
+
+                     },
+                     error: function (xhr, ajaxOptions, thrownError) {
+
+                     },
+                     complete: function (xhr, status) {
+
+                     }
+             });
+
+    }
+
+    function fncierramodalseleccionaProductos()
+    {
+        $("#modalseleccionaProductos").removeAttr("style");
+
+    }
+
+    function fncierramodalseleccionaImpresion() {
+        $("#modalseleccionaImpresion").removeAttr("style");
+
+    }
+
+
+    function fnabrirModal(numProducto,strProducto) {
+
+        fncargaddlcodigobarrasModal();
+        $('input[name="hdidproducto"]').val(numProducto);
+        var title = "Agregar Productos";
+        var strnumProd = "Producto Núm. " + numProducto ;
+        var strProd = strProducto;
+        $("#modalseleccionaProductos .modal-title").html(title);
+        $("#lblnumProducto").text(strnumProd)
+        $("#lblProducto").text(strProd)
+        new bootstrap.Modal($("#modalseleccionaProductos")).show();
+
+    }
+
+    function fncargaddlcodigobarrasModal() {
+
+         $.ajax({
+                 url: "@Url.Action("consultaCodigoBarras", "Impresion")",
+                 type: "POST",
+                 contentType: "application/json; charset=utf-8",
+                 success: function (data) {
+
+                     var codigoRespuesta = data.jsonRespuesta.codigoRespuesta;
+                     var strmensaje = "";
+
+                     if (codigoRespuesta == "0000") {
+
+                         $("#ddlcodigoBarras").val('');
+                         $("#ddlcodigoBarras").empty();
+                         $('#ddlcodigoBarras').append('<option value="0">---- Seleccione ----</option>');
+
+                         $.each(data.objsoncodigoBarras, function (index, type) {
+                             var content = '<option value="' + type.ID_CODIGO_BARRAS + '">' + type.NOMBRE_CODE_BAR + '</option>';
+                             $("#ddlcodigoBarras").append(content);
+                         });
+
+                     }
+
+                     if (codigoRespuesta == "0001") {
+
+                         strmensaje = data.jsonRespuesta.mensaje;
+                         $("#mensajeTransaccion").text(strmensaje);
+                     }
+
+                     if (codigoRespuesta == "1000") {
+
+                         strmensaje = data.jsonRespuesta.codigoRespuesta + "|" + data.jsonRespuesta.mensaje + "|" + data.jsonRespuesta.nombreClase + "|" + data.jsonRespuesta.nombreMetodo;
+                         $("#mensajeTransaccion").text(strmensaje);
+                     }                    
+
+                         },
+                        error: function (xhr, ajaxOptions, thrownError) {
+
+                        },
+                        complete: function (xhr, status) {
+
+                        }
+         });
+
+    }
+
+    function fnlimpiaModal() {
+
+        $("[class*='modal-backdrop fade show']").remove();
+        $("body").removeAttr("style");
+        $("#lblrequierecantidad").text('');
+        $("#txtCantidad").val(' ');
+
+    }
+
+    function fnlimpiaModalImpresiones() {
+
+        $("[class*='modal-backdrop fade show']").remove();
+        $("body").removeAttr("style");
+        $("#lblrequierecantidadActualiza").text('');
+        $("#txtCantidadActualiza").val(' ');
+
+    }
+
+    function fnGridCargaProductos(_idsubcategoria) {
+
+
+        if (_idsubcategoria == "") {
+            _idsubcategoria = 0;
+        }
+
+
+            var idSubCategoria = _idsubcategoria;
+            var oTblProductos = $("#tblProductos")
+
+            oTblProductos.DataTable({
+
+                //"pagingType": "full_numbers",
+                "language": {
+
+                    "sProcessing": "Procesando...",
+                    "sLengthMenu": "Mostrar _MENU_ registros",
+                    "sZeroRecords": "No se encontraron resultados",
+                    "sEmptyTable": "No existen Productos para esta SubCategoria",
+                    "sInfo": "Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros",
+                    "sInfoEmpty": "Mostrando registros del 0 al 0 de un total de 0 registros",
+                    "sInfoFiltered": "(filtrado de un total de _MAX_ registros)",
+                    "sInfoPostFix": "",
+                    "sSearch": "Buscar:",
+                    "sUrl": "",
+                    "sInfoThousands": ",",
+                    "sLoadingRecords": "Cargando...",
+                    "oPaginate": {
+                        "sFirst": "Primero",
+                        "sLast": "Último",
+                        "sNext": "Siguiente",
+                        "sPrevious": "Anterior"
+                    },
+                    "oAria": {
+                        "sSortAscending": ": Activar para ordenar la columna de manera ascendente",
+                        "sSortDescending": ": Activar para ordenar la columna de manera descendente"
+                    },
+                    "buttons": {
+                        "copy": "Copiar",
+                        "colvis": "Visibilidad"
+                    }
+
+
+                },
+               // "serverSide": true,
+                //pageLength : 5,
+                /* "data": oResults,*/
+                "ajax": {
+                    "url": "../Impresion/ConsultaProductosPorSubcategoria?idSubCategoria=" + idSubCategoria,
+                    "type": "POST",
+                    /* "datatype": "json",*/
+                    contentType: 'application/json',
+                   
+                    "data": function (d) {
+
+
+                    }
+                },
+                "columns": [
+
+                    { "defaultContent": "<button id=" + "\ " + "btnAgregar" + "\ " + "class=" + "\" btn btn-primary btn-sm" + "\" >" + "Agregar" + "</button>" },
+
+                    { "data": "idProducto" },
+                    { "data": "nombreProducto" },
+                    { "data": "Precio", render: $.fn.dataTable.render.number(',', '.', 2, '$') },
+                    { "data": "nomSubCategoria" },
+                    {
+                        "data": "Activo"
+                        , render: function (data, type, row) {
+                            return data === true ? "Activo" : "Inactivo"
+                        }
+                    }
+
+                ]
+                , "bDestroy": true
+            });
+
+            $('#tblProductos tbody').on('click', '#btnAgregar', function () {
+
+                fnlimpiaModal();
+                var tr = $(this).closest('tr').html();
+                const strarray = tr.split("/td");
+                let idProducto = strarray[1].replace('<', '').replace('td', '').replace('>', '').replace('>', '').replace('<', '');
+                let nomProducto = strarray[2].replace('<', '').replace('td', '').replace('>', '').replace('>', '').replace('<', '');
+
+                fnabrirModal(idProducto, nomProducto);
+
+            });
+
+
+
+
+
+
+    }
+
+    function fnGridCargaImpresiones(oResults) {
+
+        var oTblImpresiones = $("#tblImpresiones")
+
+        oTblImpresiones.DataTable({
+
+            "pagingType": "full_numbers",
+            "language": {
+                //"url": "../IdiomaDataTable/Spanish.lang"
+                "sProcessing": "Procesando...",
+                "sLengthMenu": "Mostrar _MENU_ registros",
+                "sZeroRecords": "No se encontraron resultados",
+                "sEmptyTable": "No existen registros de productos para imprimir",
+                "sInfo": "Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros",
+                "sInfoEmpty": "Mostrando registros del 0 al 0 de un total de 0 registros",
+                "sInfoFiltered": "(filtrado de un total de _MAX_ registros)",
+                "sInfoPostFix": "",
+                "sSearch": "Buscar:",
+                "sUrl": "",
+                "sInfoThousands": ",",
+                "sLoadingRecords": "Cargando...",
+                "oPaginate": {
+                    "sFirst": "Primero",
+                    "sLast": "Último",
+                    "sNext": "Siguiente",
+                    "sPrevious": "Anterior"
+                },
+                "oAria": {
+                    "sSortAscending": ": Activar para ordenar la columna de manera ascendente",
+                    "sSortDescending": ": Activar para ordenar la columna de manera descendente"
+                },
+                "buttons": {
+                    "copy": "Copiar",
+                    "colvis": "Visibilidad"
+                }
+
+
+            },
+            "scrollX": true,
+            /*"data": oResults,*/
+            "ajax": {
+                "url": "../Impresion/consultaproductosImpresionGrid",
+                "type": "POST",
+                "datatype": "json",
+                "data": function (data) {
+                    var datos = data;
+                }
+            },
+            "columns": [
+
+                { "defaultContent": "<button id=" + "\ " + "btnEliminar" + "\ " + "class=" + "\" btn btn-primary btn-sm" + "\" >" + "Eliminar" + "</button>" },
+                { "defaultContent": "<button id=" + "\ " + "btnPreparar" + "\ " + "class=" + "\" btn btn-primary btn-sm" + "\" >" + "Preparar" + "</button>" },
+                { "defaultContent": "<button id=" + "\ " + "btnEditar" + "\ " + "class=" + "\" btn btn-primary btn-sm" + "\" >" + "Editar" + "</button>" },
+                { "data": "idImpresion" },
+                { "data": "nombrecodeBar" },
+                { "data": "idProducto"},
+                { "data": "nombreProducto" },
+                { "data": "fechaAlta2",  },
+                { "data": "cantidad" },
+                { "data": "numcodeBar" },
+                {
+                    "data": "impreso3", createdCell: function (td, cellData, rowData, row, col) {
+                        if (cellData == 'PREPARADO') { $(td).addClass('table-cell-edit'); $("#btnImprimir").removeClass('visually-hidden'); }
+                    }
+                }
+
+            ],
+            "bDestroy": true
+        });
+
+        $('#tblImpresiones tbody').on('click', '#btnEliminar', function () {
+
+            var tr = $(this).closest('tr').html();
+            const strarray = tr.split("/td");
+            let idimpresion = strarray[3].replace('<', '').replace('td', '').replace('>', '').replace('>', '').replace('<', '');
+
+            fneliminaImpresion(idimpresion);
+        });
+        $('#tblImpresiones tbody').on('click', '#btnPreparar', function () {
+
+            var tr = $(this).closest('tr').html();
+            const strarray = tr.split("/td");
+            let idimpresion = strarray[3].replace('<', '').replace('td', '').replace('>', '').replace('>', '').replace('<', '');
+
+            fnpreparaEtiqueta(idimpresion);
+        });
+        $('#tblImpresiones tbody').on('click', '#btnEditar', function () {
+
+            fnlimpiaModalImpresiones();
+            var tr = $(this).closest('tr').html();
+            const strarray = tr.split("/td");
+            let idimpresion = strarray[3].replace('<', '').replace('td', '').replace('>', '').replace('>', '').replace('<', '');
+            let idproducto = strarray[5].replace('<', '').replace('td', '').replace('>', '').replace('>', '').replace('<', '');
+            let nomproducto = strarray[6].replace('<', '').replace('td', '').replace('>', '').replace('>', '').replace('<', '');
+
+            fnabrirModalImpresion(idimpresion, idproducto, nomproducto);
+
+        });
+    }
+
+    function fnabrirModalImpresion(idimpresion,numProducto,strProducto) {
+
+      $('#hdidimpresion').val(idimpresion);
+      $('input[name="hdidimpresion"]').val(idimpresion);
+      var title = "Actualizar Cantidad";
+      var strnumProd = "Producto Núm. " + numProducto ;
+      var strProd = strProducto;
+      $("#modalseleccionaImpresion .modal-title").html(title);
+      $("#lblnumProductoActualiza").text(strnumProd)
+      $("#lblProductoActualiza").text(strProd)
+      new bootstrap.Modal($("#modalseleccionaImpresion")).show();
+
+  }
+
+    function fneliminaImpresion(idimpresion) {
+
+
+         var dataObject = { idImpresion: idimpresion };
+
+         $.ajax({
+              url: "@Url.Action("eliminaImpresion", "Impresion")",
+             type: "POST",
+              dataType : 'json',
+              contentType: "application/json; charset=utf-8",
+              data: JSON.stringify(dataObject),
+           success: function (data) {
+
+               fncierramodalseleccionaProductos();
+               fnlimpiaModal();
+
+               var strmensaje = "";
+               var  existenRegistros = "";
+
+               if (data.jsonRespuesta.codigoRespuesta == "0000") {
+
+                   strmensaje = 'El registro seleccionado se elimino correctamente'
+                   $('#mensajeUsuario').text(strmensaje);
+
+                   existenRegistros = data.jsonRespuesta.Value;
+
+                   if (existenRegistros == 1) {
+
+                       fnrefreshgridImpresiones();
+                   }
+                   if (existenRegistros == 0) {
+
+                       var table = $('#tblImpresiones').DataTable();
+                       table.clear().draw();
+                   }
+                                    
+               }
+
+               if (data.jsonRespuesta.codigoRespuesta == "0001") {
+
+                   strmensaje = data.jsonRespuesta.mensaje;
+                   $('#mensajeTransaccion').text(strmensaje);
+               }
+
+               if (data.jsonRespuesta.codigoRespuesta == "1000") {
+
+                   strmensaje = data.jsonRespuesta.codigoRespuesta + "|" + data.jsonRespuesta.mensaje + "|" + data.jsonRespuesta.nombreClase + "|" + data.jsonRespuesta.nombreMetodo;
+                   $('#mensajeTransaccion').text(strmensaje);
+               }
+
+                  },
+                  error: function (xhr, ajaxOptions, thrownError) {
+
+                  },
+                  complete: function (xhr, status) {
+
+                  }
+          });
+
+    }
+
+    function onclickActualizarCantidad() {
+     var _idmpresion = $("#hdidimpresion").val();
+     var _cantidad = $("#txtCantidadActualiza").val();
+
+     if (_cantidad == '') {
+
+         $("#lblrequierecantidadActualiza").text("* requiere ingrese la cantidad para actualizar");
+         return;
+     }
+
+        var dataObject = { idImpresion: _idmpresion, cantidad: _cantidad };
+
+         $.ajax({
+              url: "@Url.Action("actualizacantidadImpresion", "Impresion")",
+             type: "POST",
+              dataType : 'json',
+              contentType: "application/json; charset=utf-8",
+              data: JSON.stringify(dataObject),
+              success: function (data) {
+
+                       fnlimpiaModalImpresiones();
+                       var strmensaje = "";
+
+                  if (data.respimpresionActualiza.codigoRespuesta == "0000") {
+                      fncierramodalseleccionaImpresion();
+                           strmensaje = 'El registro seleccionado se actualizo correctamente para su impresión'
+                      $('#mensajeUsuario').text(strmensaje);
+                      //fnGridCargaImpresiones();
+                     fnrefreshgridImpresiones();
+                       }
+
+                  if (data.respimpresionActualiza.codigoRespuesta == "0001") {
+
+                      strmensaje = data.respimpresionActualiza.mensaje;
+                      $('#mensajeTransaccion').text(strmensaje);
+                  }
+
+                       if (data.respimpresionActualiza.codigoRespuesta == "1000") {
+
+                           strmensaje = data.respimpresionActualiza.codigoRespuesta + "|" + data.respimpresionActualiza.mensaje + "|" + data.respimpresionActualiza.nombreClase + "|" + data.respimpresionActualiza.nombreMetodo;
+                           $('#mensajeTransaccion').text(strmensaje);
+
+                       }
+
+                  },
+                  error: function (xhr, ajaxOptions, thrownError) {
+
+                  },
+                  complete: function (xhr, status) {
+
+                  }
+          });
+
+    }
+
+    function fnrefreshgridImpresiones()
+    {
+        var table = $('#tblImpresiones').DataTable();
+        table.ajax.reload();
+    }
+
+</script>
+

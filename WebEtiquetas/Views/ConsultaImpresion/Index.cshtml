@@ -1,0 +1,85 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Consulta Impresión</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <input type="text" name="barcode" class="form-control" id="textcode" />
+    </div>
+</div>
+<p id="mensaje" class="text-danger"></p>
+ 
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        fnmenuSeguridad();
+        $('#textcode').focus();
+       
+    });
+
+    $("#textcode").on('change', function () {
+        var codebar = $('#textcode').val();
+        if (codebar.length == 12) {
+            console.log(codebar);
+            numcodebar = codebar;
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("consultacodeBar", "ConsultaImpresion")",
+                data: { numcodebar: numcodebar },
+                datatype: "json",
+                //contentType: "application/json; charset=utf-8",
+             
+                     success: function (data) {
+
+
+                         if (data.respconscodbar.codigoRespuesta == "0001") {
+
+                             $('#mensaje').text("El código de barras del producto consultado no existe en el sistema favor de verificar");
+                         }
+
+                         if (data.respconscodbar.codigoRespuesta == "0000") {
+
+                             console.log(data.jslsconscodebar);
+
+                             var datoscodeBar = "code bar: " + data.jslsconscodebar[0].numcodeBar + "  " + "  Datos del producto No.  " + data.jslsconscodebar[0].idProducto + " " + data.jslsconscodebar[0].nombreProducto + "    " + "$" + data.jslsconscodebar[0].Precio + " " + data.jslsconscodebar[0].nomSubcategoria +  "  "   + data.jslsconscodebar[0].nomCategoria;
+
+                             $('#mensaje').text(datoscodeBar);
+                         }
+                         if (data.respconscodbar.codigoRespuesta == "1000") {
+
+                             $('#mensaje').text(data.respconscodbar.mensaje);
+                         }
+
+
+                       
+                         $('#textcode').val('');
+                         $('#textcode').focus();
+
+                           },
+                             error: function (xhr, ajaxOptions, thrownError) {
+
+                             },
+                             complete: function (xhr, status) {
+
+                             }
+                });
+
+        }
+
+    });
+
+    function fnmenuSeguridad() {
+
+        $("#pnlmenubienvenido").removeClass("visually-hidden");
+        $("#btnSalir").removeClass("visually-hidden");
+
+        $("#pnlinicio").addClass("visually-hidden");
+        $("#btnLogin").addClass("visually-hidden");
+
+    }
+
+</script>
